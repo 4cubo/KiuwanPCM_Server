@@ -1,0 +1,64 @@
+﻿var config = require('config.json');
+var express = require('express');
+var router = express.Router();
+var formidable = require('formidable');
+//var Q = require('q');
+var util = require('util');
+var os = require('os');
+
+//var userService = require('services/user.service');
+var uploadFileService = require('services/uploadfile.service');
+// routes
+//router.post('/authenticate', authenticate);
+//router.post('/register', register);
+//router.get('/', getAll);
+//router.get('/current', getCurrent);
+//router.put('/:_id', update);
+//router.delete('/:_id', _delete);
+
+router.post('/', uploadFile);
+//router.put('/:_id', uploadFile);
+
+module.exports = router;
+
+function uploadFile(req, res) {
+	var form = new formidable.IncomingForm(),
+		files = [],
+		anyFile = false;
+
+	form.uploadDir = os.tmpdir();
+
+	form
+		.on('file', function(field, file) {
+			//console.log(field, file);
+			//files.push([ field, file ]);
+			files.push( file );
+			anyFile = true;
+		})
+		.on('end', function() {
+			if (anyFile){ 
+			    //console.log("uploadfile.controller.uploadFile: Files OK" );
+			    uploadFileService.uploadFile( files )
+			        .then(function ( srd ) {
+			        	
+			        	//console.log("uploadfile.controller.uploadFile: result=", srd );
+			        	
+			        	srd.fileConf.then(
+							function(result) {
+								srd.fileConf = result;
+								console.log("	result=", srd );
+								res.json( srd );
+							}
+			        	);
+			            
+			        })
+			        .catch(function (err) {
+			            res.status(400).send(err);
+			        });
+			}else{
+				res.status(400).send("MingaDominga");
+			}
+		});
+		form.parse(req);
+
+}
