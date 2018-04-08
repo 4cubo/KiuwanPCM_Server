@@ -2,6 +2,7 @@
 var express = require('express');
 var router = express.Router();
 var formidable = require('formidable');
+
 //var Q = require('q');
 var util = require('util');
 var os = require('os');
@@ -40,13 +41,14 @@ function uploadFile(req, res) {
 			    //console.log("uploadfile.controller.uploadFile: Files OK" );
 			    uploadFileService.uploadFile( files )
 			        .then(function ( srd ) {
-			        	
-			        	//console.log("uploadfile.controller.uploadFile: result=", srd );
-			        	
 			        	srd.fileConf.then(
 							function(result) {
 								srd.fileConf = result;
 								console.log("	result=", srd );
+								
+								srd.fileIn = files;
+								//srd.fileInfo = readExcel ();
+								
 								res.json( srd );
 							}
 			        	);
@@ -62,3 +64,7 @@ function uploadFile(req, res) {
 		form.parse(req);
 
 }
+
+
+
+

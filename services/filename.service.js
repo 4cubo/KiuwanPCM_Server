@@ -45,7 +45,8 @@ function getProjectConf(  ) {
 	                q1: currentyearconf.q1,
 	                q2: currentyearconf.q2,
 	                q3: currentyearconf.q3,
-	                q4: currentyearconf.q4
+	                q4: currentyearconf.q4,
+	                curName: currentY2D+currentQ + padWithZeroes((currentyearconf[currentQ.toLowerCase()]+1).toString(), 5)
 	            });
 	        } else {
 	            // current year configuration must be initialized in DB
@@ -74,3 +75,9 @@ function getProjectConf(  ) {
     return deferred.promise;
    
 }
+
+function padWithZeroes(n, width) { 
+	if (width <= 0) return n;
+	while(n.length<width)n = '0' + n; 
+	return n;
+} 
