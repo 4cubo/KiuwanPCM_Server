@@ -35,7 +35,7 @@ function uploadFile( uFiles ) {
     // }									/* @aaa TODO Multiple files */
 		
 	let parsed = parseFile ( newpath );
-	srd = { file: name, fileConf: fNService.getProjectConf() };
+	srd = { file: name, fileConf: fNService.getProjectConf(),  parsed : parsed };
     deferred.resolve(srd);
     return deferred.promise;
 }
@@ -52,17 +52,13 @@ function parseFile( path ){
 	var numberOfTec=0;
 	var numberOfSO=0;
 	var numberOfUsers=0;
-//	try{
+	try{
 		var buf = fs.readFileSync(path);
 		var wb = XLSX.read(buf, {type:'buffer'});
 		var sheet_name_list = wb.SheetNames;
 		var sheet = wb.Sheets[sheet_name_list[0] ];
 	
 		console.log ("---->" + JSON.stringify(sheet_name_list) );
-		console.log ("---->" + JSON.stringify(sheet) );
-		console.log ("---->" + JSON.stringify(SastServManager.getInstance().XLSX.utils.sheet_to_json(sheet, { raw:true}), null, 2) ); 
-		
-		result.wb=  wb;
 	
 		console.log ("    Reading Sheet 0 Main Service Request");
 		//Sheet 0 Main Service Request
@@ -89,9 +85,9 @@ function parseFile( path ){
 		result.P_PROV= result.P_PROV.trim();
 		result.P_CLI= result.P_CLI.trim();
 		console.log ("---------> app=" + result.P_APP +  "  pro=" + result.P_PRO  + "<----------");
-		result.P_T1  = isOk ( wb.Sheets[wb.SheetNames[0]]['D22'])? wb.Sheets[wb.SheetNames[0]]['D22'].v: null; 	//TecnologÃ­a 1
-		result.P_T2  = isOk ( wb.Sheets[wb.SheetNames[0]]['D23'])? wb.Sheets[wb.SheetNames[0]]['D23'].v: null; 	//TecnologÃ­a 2
-		result.P_T3  = isOk ( wb.Sheets[wb.SheetNames[0]]['D24'])? wb.Sheets[wb.SheetNames[0]]['D24'].v: null; 	//TecnologÃ­a 3
+		result.P_T1  = isOk ( wb.Sheets[wb.SheetNames[0]]['D22'])? wb.Sheets[wb.SheetNames[0]]['D22'].v: null; 	//Tecnología 1
+		result.P_T2  = isOk ( wb.Sheets[wb.SheetNames[0]]['D23'])? wb.Sheets[wb.SheetNames[0]]['D23'].v: null; 	//Tecnología 2
+		result.P_T3  = isOk ( wb.Sheets[wb.SheetNames[0]]['D24'])? wb.Sheets[wb.SheetNames[0]]['D24'].v: null; 	//Tecnología 3
 		if(isOk (result.P_T1)) {numberOfTec++};
 		if(isOk (result.P_T2)) {numberOfTec++};
 		if(isOk (result.P_T3)) {numberOfTec++};
@@ -154,11 +150,68 @@ function parseFile( path ){
 			result.LABUSER_DATA= false;
 			result.labUsersDat= null;
 		}
-//	}catch ( error ){
-//		result = null;
-//		console.log("    ERROR EN EXCEL:" + path );
-//		console.log("    ", JSON.stringify( error.getStackTrace() )  );
-//	}
+		
+		
+	}catch ( error ){
+		result = null;
+		console.log("    ERROR EN EXCEL:" + path );
+		console.log("    ", JSON.stringify( error ));
+	}
+	//Expand application names, factories, OSs etc...
+	expandAppName ( result );
+	expandFactoryAndOS ( result );
+	expandTechnologies ( result );
 	return result;
 }
+
+
+function expandAppName ( result ) { /* Steep 4 if(!SastServManager.CKC) this.createPortfolioInKiuwan ( SastServManager.ProviderPortfolioName, [ this.currentProjectInfo["P_PROV"] ] ); */
+	let values = new Array( result.P_NUMTEC );
+	for ( let i = 0; i < result.P_NUMTEC; i++ ) {
+	  let clave = 'P_T' + ( i + 1 );
+	  let curAppName =   result.P_APP +  '-' + result[clave];
+	  console.log ( '           Valor('+(i+1)+')=' + clave  + ' v=' + curAppName );
+	  values[i]= curAppName;
+	} 
+	result.__subAppNameList = values;
+}
+
+function expandFactoryAndOS (result){
+	result.__factoriesNameList= new Array();
+	result.__osList= new Array();
+	let strAux;
+	if(!result.FACTORY_DATA) return;
+	for(let ic=0;ic<result.soData.length;ic++){
+		strAux= result.soData[ic].F_NAM;
+		if(result.__factoriesNameList.indexOf(strAux) == -1 ) result.__factoriesNameList.push (strAux);
+		
+		strAux= result.soData[ic].F_OSI;
+		if(result.__osList.indexOf(strAux) == -1 ) result.__osList.push ( strAux );
+	}
+}
+
+function expandTechnologies (result){
+	let clave, curTec;
+	result.__techList= new Array();
+	for(let ic=0;ic<result.P_NUMTEC - 1; ic++){
+		clave="P_T" + (ic+1);
+		curTec= result[clave];
+		result.__techList.push(curTec);
+	}
+}
+
+
+
+
+const  SastServManager_ProjectPortfolioName   = 'Proyecto';
+const  SastServManager_ClientPortfolioName    = 'Cliente';
+const  SastServManager_ProviderPortfolioName  = 'Provider';
+const  SastServManager_AppPortfolioName       = 'Aplicacion';
+const  SastServManager_MatrixAppPortfolioName = 'Main Projet';
+const  SastServManager_TecPortfolioName       = 'Tecnologia';
+const  SastServManager_FactoryPortfolioName   = 'Factory';
+const  SastServManager_OSPortfolioName        = 'OS';
+const  SastServManager_BussAreaPortfolioName  = 'Business Area';
+const  SastServManager_FuncComPortfolioName   = 'Functional Community';
+const  SastServManager_AppNamePortfolioName   = 'Aplicacion';
 
