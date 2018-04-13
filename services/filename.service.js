@@ -12,16 +12,6 @@ service.getProjectConf = getProjectConf;
 
 module.exports = service;
 
-
-function getCurrentQuarterOfYear( date ){
-  var month = date.getMonth() + 1;
-  return ("Q" + Math.ceil(month / 3));
-}
-
-function getYear2D( date ){
-	  return (date.getFullYear() % 100).toString();
-}
-
 function getProjectConf(  ) {
    
     console.log("Service.getCurrentProjectName:");
@@ -37,17 +27,31 @@ function getProjectConf(  ) {
 	        if (err) deferred.reject(err.name + ': ' + err.message);
 	
 	        if (currentyearconf) {
-	            // current yearconfig in DB exits
+	            // current yearconfig in DB exits, 
 	        	console.log( "filenameservice.getCurrentProjectName:["+currentY2D+currentQ+"] conf=", currentyearconf );
-	            deferred.resolve({
-	                _id: currentyearconf._id,
-	                year: currentyearconf.year,
-	                q1: currentyearconf.q1,
-	                q2: currentyearconf.q2,
-	                q3: currentyearconf.q3,
-	                q4: currentyearconf.q4,
-	                curName: currentY2D+currentQ + padWithZeroes((currentyearconf[currentQ.toLowerCase()]+1).toString(), 5)
-	            });
+	            let $set = { $set: {} };
+	            $set.$set[currentQ.toLowerCase()] = (currentyearconf[currentQ.toLowerCase()] +1);
+	            console.log( "filenameservice.getCurrentProjectName setVar:"+ $set );
+
+	        	db.filenameservice.update( 
+	    			{ "_id" : currentyearconf._id }, 
+	    			$set,
+	    			function(err, result){
+	    				if (err) deferred.reject(err.name + ': ' + err.message);
+	    				if (result) { 
+	    			        console.log('' + result + ' document(s) updated');
+	    			        deferred.resolve({
+	    		                _id: currentyearconf._id,
+	    		                year: currentyearconf.year,
+	    		                q1: currentyearconf.q1,
+	    		                q2: currentyearconf.q2,
+	    		                q3: currentyearconf.q3,
+	    		                q4: currentyearconf.q4,
+	    		                curName: currentY2D+currentQ + padWithZeroes((currentyearconf[currentQ.toLowerCase()]).toString(), 5)
+	    		            });
+	    			    }
+	    			}
+	        	);
 	        } else {
 	            // current year configuration must be initialized in DB
 	        	console.log( "filenameservice.getCurrentProjectName: no conf in DB for current year. Initializing..." );
@@ -57,23 +61,36 @@ function getProjectConf(  ) {
     );
     
     function createConf() {
-        // new Object
-        var newConf = { "year" : currentY, "q1" : 1, "q2" : 1, "q3" : 1, "q4" : 1 }
+    	let currentQ = getCurrentQuarterOfYear( new Date() );
+        let currentY2D = getYear2D( new Date() );
+    	let _curName =  currentY2D + currentQ + padWithZeroes((1).toString(), 5);
 
-        // add hashed password to user object
-        user.hash = bcrypt.hashSync(userParam.password, 10);
-
+    	
+        var newConf = { "year" : currentY, "q1" : 1, "q2" : 1, "q3" : 1, "q4" : 1 };
+    	newConf[currentQ.toLowerCase()] = 2;
+    	
         db.filenameservice.insert(
     		newConf,
             function (err, doc) {
                 if (err) deferred.reject(err.name + ': ' + err.message);
-
+                newConf['curName'] = _curName;
                 deferred.resolve(newConf);
             });
     }
-    
     return deferred.promise;
    
+}
+
+function getUpdateObject(){
+	
+}
+function getCurrentQuarterOfYear( date ){
+  var month = date.getMonth() + 1;
+  return ("Q" + Math.ceil(month / 3));
+}
+
+function getYear2D( date ){
+	  return (date.getFullYear() % 100).toString();
 }
 
 function padWithZeroes(n, width) { 
