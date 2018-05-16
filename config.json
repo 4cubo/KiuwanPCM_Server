@@ -1,5 +1,8 @@
 {
-	"connectionString": "mongodb://localhost:27017/ASM",
+	"connectionString": "mongodb://localhost:27017/asm",
 	"apiUrl": "http://localhost:4000",
-	"secret": "MyOwnSecret" 
+	"secret": "MyOwnSecret",
+	"kiuwanApiUrl": "https://api.kiuwan.com",
+	"useProxy": true,
+	"proxyUrl": "http://180.93.217.30:8080"
 }

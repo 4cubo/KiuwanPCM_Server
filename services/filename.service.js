@@ -12,6 +12,8 @@ service.getProjectConf = getProjectConf;
 
 module.exports = service;
 
+
+// Use filenameservice to update counter in DB
 function getProjectConf(  ) {
    
     console.log("Service.getCurrentProjectName:");
@@ -27,12 +29,12 @@ function getProjectConf(  ) {
 	        if (err) deferred.reject(err.name + ': ' + err.message);
 	
 	        if (currentyearconf) {
-	            // current yearconfig in DB exits, 
+	            // current yearconfig in DB exits, calculate quarter and update current counter
 	        	console.log( "filenameservice.getCurrentProjectName:["+currentY2D+currentQ+"] conf=", currentyearconf );
 	            let $set = { $set: {} };
 	            $set.$set[currentQ.toLowerCase()] = (currentyearconf[currentQ.toLowerCase()] +1);
 	            console.log( "filenameservice.getCurrentProjectName setVar:"+ $set );
-
+	            // update current quarter counter in DB
 	        	db.filenameservice.update( 
 	    			{ "_id" : currentyearconf._id }, 
 	    			$set,
@@ -47,7 +49,7 @@ function getProjectConf(  ) {
 	    		                q2: currentyearconf.q2,
 	    		                q3: currentyearconf.q3,
 	    		                q4: currentyearconf.q4,
-	    		                curName: currentY2D+currentQ + padWithZeroes((currentyearconf[currentQ.toLowerCase()]).toString(), 5)
+	    		                curSASTId: currentY2D+currentQ + padWithZeroes((currentyearconf[currentQ.toLowerCase()]).toString(), 5)
 	    		            });
 	    			    }
 	    			}
@@ -73,7 +75,7 @@ function getProjectConf(  ) {
     		newConf,
             function (err, doc) {
                 if (err) deferred.reject(err.name + ': ' + err.message);
-                newConf['curName'] = _curName;
+                newConf['curSASTId'] = _curName;
                 deferred.resolve(newConf);
             });
     }

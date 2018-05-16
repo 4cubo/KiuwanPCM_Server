@@ -10,7 +10,7 @@ app.use(cors());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
-// use JWT auth to secure the api, the token can be passed in the authorization header or querystring
+// use JWT auth to secure the api, the token can be passed in the authorization header or query string
 app.use(expressJwt({
     secret: config.secret,
     getToken: function (req) {
@@ -29,7 +29,8 @@ app.use(expressJwt({
 // routes
 app.use('/users', require('./controllers/users.controller'));
 app.use('/uploadFile', require('./controllers/uploadfile.controller'));
-
+app.use('/request', require('./controllers/request.controller'));
+app.use('/kiuwan', require('./controllers/kiuwan.controller'));
 
 
 // error handler
