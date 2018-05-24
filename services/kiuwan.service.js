@@ -71,8 +71,7 @@ function getKiuwanStatistics( agregatorField ) {
                     //tecnologia : {  $push: "$applicationPortfolios.Tecnologia" },
                 }
             } 
-        ], 
-        
+        ],   
         function (err, apps) {
             if (err) deferred.reject(err.name + ': ' + err.message);
             result['_BA_'] = apps;
