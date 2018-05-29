@@ -32,6 +32,7 @@ app.use('/users', require('./controllers/users.controller'));
 app.use('/uploadFile', require('./controllers/uploadfile.controller'));
 app.use('/request', require('./controllers/request.controller'));
 app.use('/kiuwan', require('./controllers/kiuwan.controller'));
+app.use('/fod', require('./controllers/fod.controller'));
 
 
 // error handler

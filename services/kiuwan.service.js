@@ -118,11 +118,14 @@ async function insertKiuwanApplication(kiuApp) {
     db.kiuwan_apps.findOne(
         { name: kiuApp.name },
         function (err, app) {
-            if (err) deferred.reject(err.name + ': ' + err.message);
-
+            if ( err ) {
+                deferred.reject(err.name + ': ' + err.message);
+                db.close();
+            }
             if (app) {
                 // app already exists in  mongo
                 deferred.reject(' Kiwan application "' + kiuApp.name + '" is already in DB');
+                db.close();
             } else {
                 insertKiuApp(kiuApp);
             }
@@ -137,9 +140,9 @@ async function insertKiuwanApplication(kiuApp) {
             function (err, doc) {
                 if (err) deferred.reject(err.name + ': ' + err.message);
                 deferred.resolve();
+                db.close();
             });
     }
-
     return deferred.promise;
 }
 
