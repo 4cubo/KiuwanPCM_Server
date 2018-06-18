@@ -9,43 +9,49 @@ var mongoSanitize = require('express-mongo-sanitize');
 var HttpsProxyAgent = require('https-proxy-agent');
 
 var service = {};
-service.inFoDApp = inFoDApp;
+service.insertFoDEntity = insertFoDEntity;
 module.exports = service;
 
 
 
-async function inFoDApp(FoDApp) {
+function insertFoDEntity( FodEntity, collectionName, id_FieldName ) {
     var db = mongo.db(config.connectionString, { native_parser: true });
-    db.bind('fOD_apps');
+    db.bind(collectionName);
 
     var deferred = Q.defer();
 
     // validation
-    db.fOD_apps.findOne(
-        { name: FoDApp.name },
-        function (err, app) {
+    console.log('\t\t\t\tinsertFoDEntity collectionName = ', collectionName, ", id_FieldName=", id_FieldName, ", value=", FodEntity[id_FieldName], ", FodEntity['id_FieldName']=", FodEntity[id_FieldName] /*,", FodEntity=",  FodEntity */ );
+    //console.log('------->insertFoDEntity typeof FodEntity=', typeof FodEntity);
+    var queryObj = {};
+    queryObj[id_FieldName] =  FodEntity[id_FieldName] ;
+    db[collectionName].findOne(
+        //{ id_FieldName : FodEntity[id_FieldName]  },
+        queryObj,
+        function (err, data) {
             if ( err ) {
-                deferred.reject(err.name + ': ' + err.message);
+                deferred.reject( err.name + ': ' + err.message );
                 db.close();
             }
-            if (app) {
-                // app already exists in  mongo
-                deferred.reject(' FoD application "' + FoDApp.name + '" is already in DB');
+            if (data) {
+                // Entity already exist in  mongo
+                deferred.reject(' FoD entity "' + FodEntity[id_FieldName] + '" already exist in DB  id=' + data[id_FieldName] );
                 db.close();
             } else {
-                insertFoDApp(FoDApp);
+                insertEntity(FodEntity);
             }
         });
 
-    function insertFoDApp(FoDApp) {
-        mongoSanitize.sanitize(FoDApp, {
+    function insertEntity(fodentity) {
+        /*mongoSanitize.sanitize(FoDApp, {
             replaceWith: '_'
-          });
-        db.fOD_apps.insert(
-            FoDApp,
+          });*/
+        fodentity['__baseline'] = "VVASE_LINE"; 
+        db[collectionName].insert(
+            fodentity,
             function (err, doc) {
                 if (err) deferred.reject(err.name + ': ' + err.message);
-                deferred.resolve();
+                deferred.resolve(doc);
                 db.close();
             });
     }

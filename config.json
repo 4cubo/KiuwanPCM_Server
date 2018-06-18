@@ -1,8 +1,14 @@
 {
-	"connectionString": "mongodb://localhost:27017/asm",
-	"apiUrl": "http://localhost:4000",
-	"secret": "MyOwnSecret",
-	"kiuwanApiUrl": "https://api.kiuwan.com",
-	"useProxy": true,
-	"proxyUrl": "http://180.93.217.30:8080"
+	"connectionString_docker": "mongodb://localhost:32768/asm",
+	"connectionString": "mongodb://localhost:27017/asm",	
+	"apiUrl": "http://localhost:4000", 						
+	"secret": "MyOwnSecret",								
+	"kiuwanApiUrl": "https://api.kiuwan.com",				
+	"useProxy": false,										
+	"proxyUrl": "http://180.93.217.30:8080",				
+	"FoDApiUrl": "https://api.emea.fortify.com/api/v3",
+	"FoDApiHost": "api.emea.fortify.com",
+	"FoDApiAPrePath": "/api/v3",
+	"useLocalCredentialsToKiuwan" : true,					
+	"useLocalCredentialsToFoD" : true						
 }

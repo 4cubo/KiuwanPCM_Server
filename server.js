@@ -15,12 +15,12 @@ app.use(bodyParser.json());
 app.use(expressJwt({
     secret: config.secret,
     getToken: function (req) {
-        console.log("Request: " + req.url);
+        console.log("\n\n\nREQUEST method: ", req.method, " url: ", req.url );
         if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
-            console.log("   Header JWT= " + req.headers.authorization);
+            //console.log("   Header JWT= " + req.headers.authorization);
             return req.headers.authorization.split(' ')[1];
         } else if (req.query && req.query.token) {
-            console.log("   Param JWT= " + req.query.token);
+            //console.log("   Param JWT= " + req.query.token);
             return req.query.token;
         }
         return null;

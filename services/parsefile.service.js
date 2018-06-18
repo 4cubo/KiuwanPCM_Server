@@ -9,9 +9,6 @@ var mongo = require('mongoskin');
 var db = mongo.db(config.connectionString, { native_parser: true });
 db.bind('sastrequest');
 
-
-console.log("------->cdcdcdcdcdc : " + JSON.stringify(config.connectionString));
-
 var service = {};
 
 service.parseFile = parseFile;

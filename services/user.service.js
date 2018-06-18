@@ -19,9 +19,9 @@ service.delete = _delete;
 module.exports = service;
 
 function authenticate(username, password) {
-	
-	console.log( "userService.authenticate user= " + username + " pwd=" + password );
-	
+
+    console.log("userService.authenticate user= " + username + " pwd=" + password);
+
     var deferred = Q.defer();
 
     db.users.findOne({ username: username }, function (err, user) {
@@ -29,17 +29,25 @@ function authenticate(username, password) {
 
         if (user && bcrypt.compareSync(password, user.hash)) {
             // authentication successful
-        	console.log( "userService.authenticate: authentication successful" );
+            console.log("userService.authenticate: authentication successful");
             deferred.resolve({
-                _id: user._id,
+                //_id: user._id,
                 username: user.username,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                token: jwt.sign({ sub: user._id }, config.secret)
+                //kiuwanUN: user.kiuwanUN,
+                //kiuwanPW: user.kiuwanPW,
+                //fodUN: user.fodUN,
+                //fodPW: user.fodPW,
+                token: jwt.sign(
+                    { sub: user._id, username: user.username, kiuwanUN: user.kiuwanUN, kiuwanPW: user.kiuwanPW, fodUN: user.fodUN, fodPW: user.fodPW  }, 
+                    config.secret, 
+                    { expiresIn:  86400 }//86400 // expires in 24 hours
+                ) 
             });
         } else {
             // authentication failed
-        	console.log( "userService.authenticate: authentication failed" );
+            console.log("userService.authenticate: authentication failed");
             deferred.resolve();
         }
     });

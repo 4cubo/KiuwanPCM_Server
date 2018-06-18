@@ -32,7 +32,7 @@ function authenticate(req, res) {
 }
 
 function register(req, res) {
-	console.log( "users.controller->userService.register, body=",req.body );
+	console.log( "users.controller->userService.register, body=", req.body );
     userService.create(req.body)
         .then(function () {
         	console.log( "<-- success" );

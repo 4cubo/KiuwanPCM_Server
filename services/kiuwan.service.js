@@ -24,7 +24,7 @@ module.exports = service;
 
 function getKiuwanStatistics( agregatorField ) {
 
-    console.log ('paramtetro service-------------->', agregatorField );
+    console.log ('\tgetKiuwanStatistics[SERVICE] grouped by element:', agregatorField  );
     //var agregatorField = "$applicationPortfolios.Business Area";
 
     var db = mongo.db(config.connectionString, { native_parser: true });
@@ -75,7 +75,7 @@ function getKiuwanStatistics( agregatorField ) {
         function (err, apps) {
             if (err) deferred.reject(err.name + ': ' + err.message);
             result['_BA_'] = apps;
-            console.log('------------------------>AGREGATE = ', result);
+            //console.log('------------------------>AGREGATE = ', result);
             deferred.resolve(result['_BA_']);
             
         }
@@ -139,7 +139,7 @@ async function insertKiuwanApplication(kiuApp) {
             kiuApp,
             function (err, doc) {
                 if (err) deferred.reject(err.name + ': ' + err.message);
-                deferred.resolve();
+                deferred.resolve(doc);
                 db.close();
             });
     }
@@ -147,7 +147,7 @@ async function insertKiuwanApplication(kiuApp) {
 }
 
 function getStatus(  ) {
-    console.log("Kiuwan.Service.getStatus->");
+    //console.log("\n\t->Kiuwan.Service.getStatus");
     var db = mongo.db(config.connectionString, { native_parser: true });
     db.bind('kiuwan_status');
 
@@ -156,13 +156,17 @@ function getStatus(  ) {
     db.kiuwan_status.findOne( 
     	{ id: "current" }, 
     	function (err, currentStatus) {
-	        if (err) deferred.reject(err.name + ': ' + err.message);
+	        if (err) {
+                deferred.reject(err.name + ': ' + err.message);
+                db.close();
+            }
 	
 	        if (currentStatus) {
-                console.log( "Kiuwan.Service.getStatus:", currentStatus );
+                console.log( "\n\t->Kiuwan.Service.getStatus:" +  currentStatus.id + "  " +  currentStatus.status);
                 deferred.resolve(currentStatus);
+                db.close();
 	        } else {
-	        	console.log( "Kiuwan.Service.getStatus: no conf in DB for current year. Initializing..." );
+	        	console.log( "\n\t->Kiuwan.Service.getStatus:no conf in DB for current year. Initializing..." );
                 resetStatus();
 	        }
 	    }
@@ -182,6 +186,7 @@ function getStatus(  ) {
             function (err, doc) {
                 if (err) deferred.reject(err.name + ': ' + err.message);
                 deferred.resolve(newConf);
+                db.close();
             });
     }
     return deferred.promise;  
@@ -199,7 +204,7 @@ function updateStatusToLoading(  ) {
         function(err, result){
             
             if (result) { 
-                console.log(' updateOne result = ' + result );
+                console.log('\tKiuwan.Service.updateStatusToLoading result=' + result );
                 db.close();
                 deferred.resolve(result); 
             } else {
@@ -214,32 +219,33 @@ function updateStatusToLoading(  ) {
 }
 
 function load( kiuwanAuthToken ) {
-    console.log("Kiuwan.Service.load->", kiuwanAuthToken );
+    console.log("\tKiuwan.Service.load->", kiuwanAuthToken );
     setTimeout(loadKiuwanApplicationsData, 1500, kiuwanAuthToken );
     return updateStatusToLoading(); 
 }
 
 var kiuwanAppData = {};
 
-const  getAppsSync = async requestData => {  
+const  getAppsSync = async requestData => {
+    console.log("\t->getAppsSync:Calling kiuwan for apps:", requestData.url,);  
     var result = await requestpromise(requestData)
         .then(function (parsedBody) {
             kiuwanAppData = JSON.parse(parsedBody);
-            console.log ('#-->', kiuwanAppData.length  );
+            console.log ('\tok<- ', kiuwanAppData.length  );
         })
         .catch(function (err) {
-            console.log('---->error getting applications: ', err);
+            console.log('\terror<-', err);
         }); 
     Promise.resolve(result);
 };
 
 async function loadKiuwanApplicationsData( token ) {
-    console.log("---------------->loadKiuwanApplicationsData: " + token  );
+    console.log("\tLoading kiuwan applications: " );
     var agent = null;
     if (config.useProxy) {
         agent = new HttpsProxyAgent(config.proxyUrl);
     }
-    // Request for get all Applications
+    // Request for get all Applications   @TODO MUST BE PAGINATED
     var requestData = {
 		agent : agent, // for proxy configuration View SASTWebApp server.js
 		url : config.kiuwanApiUrl + "/apps/list",
@@ -254,11 +260,15 @@ async function loadKiuwanApplicationsData( token ) {
 	// Remove proxy agent if not needed
 	if (!config.useProxy) {
 		delete requestData.agent;
-	}
-    console.log("Calling kiuwan for apps...", requestData.url,);
-    await getAppsSync( requestData );
-    console.log('Apps#: ', kiuwanAppData.length );
-    loadKiuwanAnalysisAndDeliveries(token);   
+    }
+    try{
+        await getAppsSync( requestData );
+        console.log('\tNumber of received apps#: ', kiuwanAppData.length );
+        loadKiuwanAnalysisAndDeliveries(token);
+    }catch(error){
+        console.log ('\tERROR<- getting apps in loadKiuwanApplicationsData', error );
+    }
+       
 }
 
 const  getReportSync = async (requestData, appIndx, typeOfAnalysis) => {  
@@ -268,7 +278,7 @@ const  getReportSync = async (requestData, appIndx, typeOfAnalysis) => {
             //console.log ('#-->', kiuwanAppData[appIndx][typeOfAnalysis].length  );
         })
         .catch(function (err) {
-            console.log('---->error getting [',typeOfAnalysis,']: ', err);
+            console.log('---->error getting report [',typeOfAnalysis,']: ', err);
         }); 
     Promise.resolve(result);
 };
@@ -281,7 +291,7 @@ const  getReportMetricsSync = async (requestData, appIndx, rIndex, typeOfAnalysi
             //console.log ('-->ok'  );
         })
         .catch(function (err) {
-            console.log('---->error getting [',appIndx, typeOfAnalysis, rIndex,'] : ', err);
+            console.log('---->error getting [',appIndx, typeOfAnalysis, rIndex,'] : ', err, typeof err);
         }); 
     Promise.resolve(result);
 };
@@ -313,46 +323,63 @@ async function loadKiuwanAnalysisAndDeliveries (  token ) {
     // Request for get all Application analysis
     for(var appIndex = 0; appIndex < kiuwanAppData.length; appIndex++){
         appName = kiuwanAppData[appIndex].name;
-        console.log( "[",appIndex,"]Loading reports for " ,  kiuwanAppData[appIndex].name );
+        console.log( "\t-->[",(appIndex+1),"/",kiuwanAppData.length,"] " ,  kiuwanAppData[appIndex].name, ", loading reports "  );
         //BASE LINES
         requestData.url = config.kiuwanApiUrl +  '/apps/'+encodeURI(appName)+'/analyses';
-        console.log("Calling kiuwan for analysis...", requestData.url,);
-        await getReportSync( requestData, appIndex, 'ANALISYS' );
-        console.log('Analysis#: ', kiuwanAppData[appIndex]['ANALISYS'].length );
+        console.log("\t\tCalling kiuwan for analysis...", requestData.url,);
+        try{
+            await getReportSync( requestData, appIndex, 'ANALISYS' );
+        }catch(error){
+            console.log ('\t\tERROR<-', error );
+        }
+        console.log('\t\t\tAnalysis#: ', kiuwanAppData[appIndex]['ANALISYS'].length );
 
         //METRICS FOR BASE LINES
         for (var blIndex = 0; blIndex < kiuwanAppData[appIndex]['ANALISYS'].length; blIndex++){
             var aCode = encodeURI( kiuwanAppData[appIndex]['ANALISYS'][blIndex].code);
             requestData.url = config.kiuwanApiUrl +  '/metrics?code=' +  aCode;
-            console.log("Calling kiuwan for analysis [",blIndex," ",aCode,"] metrics ...", requestData.url);
-            await getReportMetricsSync( requestData, appIndex, blIndex, 'ANALISYS' );
-            //console.log(' -->', kiuwanAppData[appIndex]['ANALISYS'][blIndex]['METRICS'] );
-            //console.log(' -->ok' );
+            console.log("\t\tCalling kiuwan for metrics of analysis [",(blIndex+1),"/", kiuwanAppData[appIndex]['ANALISYS'].length , "-",aCode,"]...", requestData.url);
+            try{
+                await getReportMetricsSync( requestData, appIndex, blIndex, 'ANALISYS' );
+            }catch(error){
+                //console.log ('\t\tERROR<-', error );
+            }
         }
         
         //DELIVERIES
         requestData.url = config.kiuwanApiUrl +  '/apps/'+encodeURI(appName)+'/deliveries';
-        console.log("Calling kiuwan for deliveries...", requestData.url,);
-        await getReportSync( requestData, appIndex, 'DELIVERIES' );
-        console.log('Deliveries#: ', kiuwanAppData[appIndex]['DELIVERIES'].length );
+        console.log("\t\tCalling kiuwan for deliveries...", requestData.url,);
+        try{
+            await getReportSync( requestData, appIndex, 'DELIVERIES' );
+        }catch(error){
+            console.log ('\t\tERROR<-', error );
+        }
+        console.log('\t\t\tDeliveries#: ', kiuwanAppData[appIndex]['DELIVERIES'].length );
 
         //METRICS FOR DELIVERIES
         for (var dlIndex = 0; dlIndex < kiuwanAppData[appIndex]['DELIVERIES'].length; dlIndex++){
             var dCode = encodeURI( kiuwanAppData[appIndex]['DELIVERIES'][dlIndex].code);
             requestData.url = config.kiuwanApiUrl +  '/metrics?code=' +  dCode;
-            console.log("Calling kiuwan for deliverie [",dlIndex," ",dCode,"] metrics ...", requestData.url);
-            await getReportMetricsSync( requestData, appIndex, dlIndex, 'DELIVERIES' );
+            console.log("\t\tCalling kiuwan for metrics of delivery [",(dlIndex+1),"/", kiuwanAppData[appIndex]['DELIVERIES'].length,"-",dCode,"] metrics ...", requestData.url);
+            try{
+                await getReportMetricsSync( requestData, appIndex, dlIndex, 'DELIVERIES' );
+            }catch(error){
+                //console.log ('\t\tERROR<-', error );
+            }
             //console.log(' -->', kiuwanAppData[appIndex]['DELIVERIES'][dlIndex] );
             //console.log(' -->ok' );
         }
         
-        console.log( "ok app " ,  kiuwanAppData[appIndex].name, ' inserting in Mongo...' );
-
-        var inRes = await insertKiuwanApplication ( kiuwanAppData[appIndex] );
-
-       
+        console.log( "\t\tok loading app data " ,  kiuwanAppData[appIndex].name, ', inserting in mongo...' );
+        var inRes;
+        try{
+            inRes = await insertKiuwanApplication ( kiuwanAppData[appIndex] );
+            console.log( '\t\tOK: ', inRes.ops[0]._id );
+        }catch(error){
+            console.log ('\t\tERROR: ', error );
+        }
         
-        console.log( 'ok', inRes );
     }
+    console.log("\tLOADING KIUWAN DATA PROCESS END"  );
         
 }
